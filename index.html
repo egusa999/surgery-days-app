@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>術後経過日数計算</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2F5C54">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="経過日数">
+<meta name="mobile-web-app-capable" content="yes">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EEF1EC;
+    --card: #FFFFFF;
+    --ink: #1F2E2B;
+    --ink-soft: #55635E;
+    --ink-faint: #8C978F;
+    --line: #D8DED7;
+    --line-strong: #B9C4BC;
+    --pine: #2F5C54;
+    --pine-dark: #1E3E38;
+    --pine-pale: #E3ECE8;
+    --stamp-red: #9C3B2A;
+    --stamp-red-dark: #7A2E20;
+    --stamp-red-pale: #F5E4DF;
+    --error: #A32D2D;
+    --error-pale: #FBEAEA;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow-card: 0 1px 2px rgba(31,46,43,0.06), 0 6px 20px rgba(31,46,43,0.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--pine);
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+
+  h1 {
+    font-size: 21px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .rule {
+    width: 48px;
+    height: 2px;
+    background: var(--pine);
+    margin: 14px auto 0;
+    border-radius: 1px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 22px 20px;
+  }
+
+  .card + .card { margin-top: 16px; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1.5px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--pine);
+    box-shadow: 0 0 0 3px var(--pine-pale);
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--ink-faint);
+    font-weight: 400;
+    font-size: 14px;
+  }
+
+  .icon-btn {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--line-strong);
+    background: var(--paper);
+    color: var(--pine);
+    font-size: 19px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .icon-btn:hover { background: var(--pine-pale); }
+  .icon-btn:active { transform: scale(0.96); }
+  .icon-btn:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 2px;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin: 8px 2px 0;
+    line-height: 1.5;
+  }
+
+  .error-box {
+    display: none;
+    align-items: flex-start;
+    gap: 8px;
+    background: var(--error-pale);
+    color: var(--error);
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  .error-box.show { display: flex; }
+
+  .primary-btn {
+    width: 100%;
+    margin-top: 18px;
+    padding: 13px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--pine);
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .primary-btn:hover { background: var(--pine-dark); }
+  .primary-btn:active { transform: scale(0.99); }
+
+  .result-section {
+    margin-top: 16px;
+    display: none;
+  }
+
+  .result-section.show { display: block; }
+
+  .stamp-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 26px 20px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .stamp-label {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+
+  .stamp-ring {
+    border: 2.5px solid var(--stamp-red);
+    border-radius: var(--radius-md);
+    padding: 16px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transform: rotate(-1.4deg);
+    animation: stamp-press 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stamp-ring { animation: none; }
+  }
+
+  @keyframes stamp-press {
+    0% { opacity: 0; transform: rotate(-1.4deg) scale(1.3); }
+    60% { opacity: 1; }
+    100% { opacity: 1; transform: rotate(-1.4deg) scale(1); }
+  }
+
+  .stamp-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--stamp-red-dark);
+    letter-spacing: 0.03em;
+  }
+
+  .stamp-elapsed {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--stamp-red);
+    letter-spacing: 0.02em;
+  }
+
+  .secondary-btn {
+    margin-top: 18px;
+    width: 100%;
+    padding: 11px;
+    border: 1.5px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .secondary-btn:hover { background: var(--pine-pale); border-color: var(--pine); }
+
+  .toast {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--pine);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .toast.show { opacity: 1; }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(31,46,43,0.4);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 10;
+    padding: 0;
+  }
+
+  .overlay.show { display: flex; }
+
+  .cal-popover {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    padding: 18px 18px 24px;
+    box-shadow: 0 -4px 24px rgba(31,46,43,0.18);
+  }
+
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+
+  .cal-nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--line-strong);
+    background: var(--paper);
+    color: var(--pine);
+    font-size: 17px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .cal-nav-btn:hover { background: var(--pine-pale); }
+
+  .cal-title {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 15px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .cal-year-input {
+    width: 64px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    border: 1.5px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    padding: 6px 4px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .cal-weekday {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-faint);
+    padding: 4px 0 8px;
+  }
+
+  .cal-day {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 9px 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+  }
+
+  .cal-day:hover { background: var(--pine-pale); }
+  .cal-day.empty { cursor: default; }
+  .cal-day.empty:hover { background: transparent; }
+  .cal-day.today { color: var(--pine); font-weight: 700; }
+  .cal-day.selected { background: var(--pine); color: #fff; font-weight: 700; }
+
+  .cal-close-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--paper);
+    border: 1.5px solid var(--line-strong);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <p class="eyebrow">SURGICAL DATE TRACKER</p>
+    <h1>術後経過日数計算</h1>
+    <div class="rule"></div>
+  </header>
+
+  <section class="card">
+    <label for="dateInput">手術日</label>
+    <div class="input-row">
+      <input type="text" id="dateInput" inputmode="numeric" placeholder="例: 2026/8/5, 20260805, 8/5" autocomplete="off">
+      <button type="button" class="icon-btn" id="calendarBtn" aria-label="カレンダーを開く">▦</button>
+    </div>
+    <p class="hint">YYYY-MM-DD / YYYYMMDD / MM-DD など、区切りは - / . いずれも可</p>
+    <div class="error-box" id="errorBox" role="alert" aria-live="polite"></div>
+    <button type="button" class="primary-btn" id="calcBtn">計算する</button>
+  </section>
+
+  <section class="result-section" id="resultSection">
+    <div class="stamp-card">
+      <p class="stamp-label">経過日数</p>
+      <div class="stamp-ring" id="stampRing">
+        <div class="stamp-date" id="stampDate"></div>
+        <div class="stamp-elapsed" id="stampElapsed"></div>
+      </div>
+      <button type="button" class="secondary-btn" id="copyBtn">結果をコピー</button>
+      <p class="toast" id="copyToast">コピーしました</p>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="calOverlay">
+  <div class="cal-popover">
+    <div class="cal-header">
+      <button type="button" class="cal-nav-btn" id="prevMonthBtn" aria-label="前の月">‹</button>
+      <div class="cal-title">
+        <input type="number" id="yearJumpInput" class="cal-year-input" aria-label="西暦年">
+        <span>年</span>
+        <span id="monthLabel"></span>
+      </div>
+      <button type="button" class="cal-nav-btn" id="nextMonthBtn" aria-label="次の月">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <button type="button" class="cal-close-btn" id="closeCalBtn">閉じる</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==================== Constants ==================== */
+  var CONSTANTS = {
+    DAYS_PER_MONTH: 28,
+    DAYS_PER_WEEK: 7,
+    DATE_DISPLAY_SEPARATOR: '/',
+    MIN_YEAR: 1900,
+    MAX_YEAR: 2200,
+    WEEKDAY_LABELS: ['日', '月', '火', '水', '木', '金', '土']
+  };
+
+  /* ==================== Exceptions ==================== */
+  function ValidationError(message) {
+    this.name = 'ValidationError';
+    this.message = message;
+  }
+  ValidationError.prototype = Object.create(Error.prototype);
+
+  /* ==================== Logger ==================== */
+  var Logger = {
+    error: function (context, err) {
+      console.error('[' + context + ']', err);
+    }
+  };
+
+  /* ==================== DateParser ====================
+     Parses flexible surgery-date input into {year, month, day}.
+     Supported: YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD
+                MM-DD / MM/DD / MM.DD / MMDD / M-D (leading zero omission, year inferred)
+  ==================================================== */
+  var DateParser = {
+    parse: function (raw) {
+      if (typeof raw !== 'string') {
+        throw new ValidationError('入力が不正です。');
+      }
+      var input = raw.trim();
+      if (input === '') {
+        throw new ValidationError('手術日を入力してください。');
+      }
+
+      var m;
+
+      // YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD
+      m = input.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
+      if (m) {
+        return { year: parseInt(m[1], 10), month: parseInt(m[2], 10), day: parseInt(m[3], 10) };
+      }
+
+      // YYYYMMDD
+      m = input.match(/^(\d{4})(\d{2})(\d{2})$/);
+      if (m) {
+        return { year: parseInt(m[1], 10), month: parseInt(m[2], 10), day: parseInt(m[3], 10) };
+      }
+
+      // MM-DD / MM/DD / MM.DD (year inferred)
+      m = input.match(/^(\d{1,2})[-\/.](\d{1,2})$/);
+      if (m) {
+        return this._inferYear(parseInt(m[1], 10), parseInt(m[2], 10));
+      }
+
+      // MMDD or MDD (no separator, year inferred)
+      m = input.match(/^(\d{3,4})$/);
+      if (m) {
+        var digits = m[1];
+        var month, day;
+        if (digits.length === 4) {
+          month = parseInt(digits.slice(0, 2), 10);
+          day = parseInt(digits.slice(2), 10);
+        } else {
+          month = parseInt(digits.slice(0, 1), 10);
+          day = parseInt(digits.slice(1), 10);
+        }
+        return this._inferYear(month, day);
+      }
+
+      throw new ValidationError('日付の形式を認識できません。');
+    },
+
+    _inferYear: function (month, day) {
+      var today = new Date();
+      var candidateYear = today.getFullYear();
+      var candidate = { year: candidateYear, month: month, day: day };
+      if (Validator.isValidCalendarDate(candidate) && Validator.toDate(candidate) > this._todayMidnight()) {
+        candidate.year = candidateYear - 1;
+      }
+      return candidate;
+    },
+
+    _todayMidnight: function () {
+      var t = new Date();
+      t.setHours(0, 0, 0, 0);
+      return t;
+    }
+  };
+
+  /* ==================== Validator ==================== */
+  var Validator = {
+    isValidCalendarDate: function (d) {
+      if (!Number.isInteger(d.year) || !Number.isInteger(d.month) || !Number.isInteger(d.day)) {
+        return false;
+      }
+      if (d.month < 1 || d.month > 12) return false;
+      if (d.day < 1 || d.day > 31) return false;
+      var dt = new Date(d.year, d.month - 1, d.day);
+      return dt.getFullYear() === d.year && dt.getMonth() === d.month - 1 && dt.getDate() === d.day;
+    },
+
+    toDate: function (d) {
+      var dt = new Date(d.year, d.month - 1, d.day);
+      dt.setHours(0, 0, 0, 0);
+      return dt;
+    },
+
+    validateSurgeryDate: function (d) {
+      if (!this.isValidCalendarDate(d)) {
+        throw new ValidationError('存在しない日付です。入力内容を確認してください。');
+      }
+      if (d.year < CONSTANTS.MIN_YEAR || d.year > CONSTANTS.MAX_YEAR) {
+        throw new ValidationError('年の範囲が不正です(' + CONSTANTS.MIN_YEAR + '〜' + CONSTANTS.MAX_YEAR + ')。');
+      }
+      var surgeryDate = this.toDate(d);
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (surgeryDate > today) {
+        throw new ValidationError('手術日は本日以前の日付を入力してください。');
+      }
+      return surgeryDate;
+    }
+  };
+
+  /* ==================== ResultFormatter ==================== */
+  var ResultFormatter = {
+    formatDisplayDate: function (d) {
+      return d.year + CONSTANTS.DATE_DISPLAY_SEPARATOR +
+        this._pad(d.month) + CONSTANTS.DATE_DISPLAY_SEPARATOR + this._pad(d.day);
+    },
+
+    formatElapsed: function (surgeryDate) {
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      var diffMs = today.getTime() - surgeryDate.getTime();
+      var diffDays = Math.round(diffMs / 86400000);
+
+      var months = Math.floor(diffDays / CONSTANTS.DAYS_PER_MONTH);
+      var remAfterMonths = diffDays % CONSTANTS.DAYS_PER_MONTH;
+      var weeks = Math.floor(remAfterMonths / CONSTANTS.DAYS_PER_WEEK);
+      var days = remAfterMonths % CONSTANTS.DAYS_PER_WEEK;
+
+      return months + 'M' + weeks + 'w' + days + 'd';
+    },
+
+    _pad: function (n) {
+      return n < 10 ? '0' + n : String(n);
+    }
+  };
+
+  /* ==================== ClipboardService ==================== */
+  var ClipboardService = {
+    copy: function (text, onSuccess, onFailure) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(function (err) {
+          Logger.error('ClipboardService.copy', err);
+          ClipboardService._fallbackCopy(text, onSuccess, onFailure);
+        });
+      } else {
+        this._fallbackCopy(text, onSuccess, onFailure);
+      }
+    },
+
+    _fallbackCopy: function (text, onSuccess, onFailure) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) { onSuccess(); } else { onFailure(); }
+      } catch (err) {
+        Logger.error('ClipboardService._fallbackCopy', err);
+        onFailure();
+      }
+    }
+  };
+
+  /* ==================== CalendarPicker ==================== */
+  var CalendarPicker = {
+    viewYear: 0,
+    viewMonth: 0, // 0-indexed
+    selected: null,
+    onSelect: null,
+
+    open: function (initial, onSelect) {
+      var base = initial && Validator.isValidCalendarDate(initial) ? initial : this._todayParts();
+      this.viewYear = base.year;
+      this.viewMonth = base.month - 1;
+      this.selected = initial && Validator.isValidCalendarDate(initial) ? initial : null;
+      this.onSelect = onSelect;
+      this._render();
+      document.getElementById('calOverlay').classList.add('show');
+      document.getElementById('yearJumpInput').focus();
+    },
+
+    close: function () {
+      document.getElementById('calOverlay').classList.remove('show');
+    },
+
+    prevMonth: function () {
+      this.viewMonth -= 1;
+      if (this.viewMonth < 0) { this.viewMonth = 11; this.viewYear -= 1; }
+      this._render();
+    },
+
+    nextMonth: function () {
+      this.viewMonth += 1;
+      if (this.viewMonth > 11) { this.viewMonth = 0; this.viewYear += 1; }
+      this._render();
+    },
+
+    jumpToYear: function (year) {
+      if (!Number.isInteger(year)) return;
+      if (year < CONSTANTS.MIN_YEAR) year = CONSTANTS.MIN_YEAR;
+      if (year > CONSTANTS.MAX_YEAR) year = CONSTANTS.MAX_YEAR;
+      this.viewYear = year;
+      this._render();
+    },
+
+    _todayParts: function () {
+      var t = new Date();
+      return { year: t.getFullYear(), month: t.getMonth() + 1, day: t.getDate() };
+    },
+
+    _render: function () {
+      document.getElementById('yearJumpInput').value = this.viewYear;
+      document.getElementById('monthLabel').textContent = (this.viewMonth + 1) + '月';
+
+      var grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+
+      CONSTANTS.WEEKDAY_LABELS.forEach(function (label) {
+        var el = document.createElement('div');
+        el.className = 'cal-weekday';
+        el.textContent = label;
+        grid.appendChild(el);
+      });
+
+      var firstDay = new Date(this.viewYear, this.viewMonth, 1).getDay();
+      var daysInMonth = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
+      var today = this._todayParts();
+
+      for (var i = 0; i < firstDay; i++) {
+        var empty = document.createElement('div');
+        empty.className = 'cal-day empty';
+        grid.appendChild(empty);
+      }
+
+      for (var day = 1; day <= daysInMonth; day++) {
+        (function (day) {
+          var cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'cal-day';
+          cell.textContent = day;
+
+          var isToday = today.year === CalendarPicker.viewYear &&
+            (today.month - 1) === CalendarPicker.viewMonth && today.day === day;
+          var isSelected = CalendarPicker.selected &&
+            CalendarPicker.selected.year === CalendarPicker.viewYear &&
+            (CalendarPicker.selected.month - 1) === CalendarPicker.viewMonth &&
+            CalendarPicker.selected.day === day;
+
+          if (isToday) cell.classList.add('today');
+          if (isSelected) cell.classList.add('selected');
+
+          cell.addEventListener('click', function () {
+            var picked = { year: CalendarPicker.viewYear, month: CalendarPicker.viewMonth + 1, day: day };
+            CalendarPicker.close();
+            if (CalendarPicker.onSelect) CalendarPicker.onSelect(picked);
+          });
+
+          grid.appendChild(cell);
+        })(day);
+      }
+    }
+  };
+
+  /* ==================== App (UI wiring) ==================== */
+  var App = {
+    init: function () {
+      this.dateInput = document.getElementById('dateInput');
+      this.errorBox = document.getElementById('errorBox');
+      this.resultSection = document.getElementById('resultSection');
+      this.stampDate = document.getElementById('stampDate');
+      this.stampElapsed = document.getElementById('stampElapsed');
+      this.stampRing = document.getElementById('stampRing');
+      this.copyToast = document.getElementById('copyToast');
+      this.lastResultText = '';
+
+      document.getElementById('calcBtn').addEventListener('click', this.handleCalculate.bind(this));
+      document.getElementById('copyBtn').addEventListener('click', this.handleCopy.bind(this));
+      document.getElementById('calendarBtn').addEventListener('click', this.handleOpenCalendar.bind(this));
+      document.getElementById('closeCalBtn').addEventListener('click', function () { CalendarPicker.close(); });
+      document.getElementById('calOverlay').addEventListener('click', function (e) {
+        if (e.target.id === 'calOverlay') CalendarPicker.close();
+      });
+      document.getElementById('prevMonthBtn').addEventListener('click', function () { CalendarPicker.prevMonth(); });
+      document.getElementById('nextMonthBtn').addEventListener('click', function () { CalendarPicker.nextMonth(); });
+
+      var yearInput = document.getElementById('yearJumpInput');
+      yearInput.addEventListener('change', function () {
+        CalendarPicker.jumpToYear(parseInt(yearInput.value, 10));
+      });
+
+      this.dateInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') App.handleCalculate();
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') CalendarPicker.close();
+      });
+    },
+
+    handleOpenCalendar: function () {
+      var initial = null;
+      try {
+        initial = DateParser.parse(this.dateInput.value);
+      } catch (err) {
+        initial = null;
+      }
+      CalendarPicker.open(initial, function (picked) {
+        App.dateInput.value = ResultFormatter.formatDisplayDate(picked);
+        App.hideError();
+      });
+    },
+
+    handleCalculate: function () {
+      this.hideError();
+      var raw = this.dateInput.value;
+      try {
+        var parsed = DateParser.parse(raw);
+        var surgeryDate = Validator.validateSurgeryDate(parsed);
+        var displayDate = ResultFormatter.formatDisplayDate(parsed);
+        var elapsed = ResultFormatter.formatElapsed(surgeryDate);
+        this.showResult(displayDate, elapsed);
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          this.showError(err.message);
+        } else {
+          Logger.error('App.handleCalculate', err);
+          this.showError('予期しないエラーが発生しました。');
+        }
+      }
+    },
+
+    showResult: function (displayDate, elapsed) {
+      this.stampDate.textContent = displayDate + ' 手術';
+      this.stampElapsed.textContent = elapsed;
+      this.lastResultText = displayDate + ' 手術 ／ 経過 ' + elapsed;
+      this.resultSection.classList.add('show');
+
+      // restart stamp-press animation
+      this.stampRing.style.animation = 'none';
+      void this.stampRing.offsetWidth;
+      this.stampRing.style.animation = '';
+    },
+
+    handleCopy: function () {
+      if (!this.lastResultText) return;
+      var toast = this.copyToast;
+      ClipboardService.copy(this.lastResultText, function () {
+        toast.classList.add('show');
+        setTimeout(function () { toast.classList.remove('show'); }, 1600);
+      }, function () {
+        App.showError('コピーに失敗しました。手動で選択してコピーしてください。');
+      });
+    },
+
+    showError: function (message) {
+      this.errorBox.textContent = message;
+      this.errorBox.classList.add('show');
+    },
+
+    hideError: function () {
+      this.errorBox.classList.remove('show');
+      this.errorBox.textContent = '';
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    App.init();
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function (err) {
+        Logger.error('ServiceWorker.register', err);
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
