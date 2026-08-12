@@ -4,6 +4,7 @@
   "description": "手術日からの経過日数(M週d)を計算するツール",
   "start_url": "./index.html",
   "scope": "./",
+  "id": "./surgery-days-app",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#EEF1EC",
